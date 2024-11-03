@@ -1,70 +1,140 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import { Text, View, StyleSheet,Pressable } from 'react-native';
+import { Link } from 'expo-router';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import forge from 'node-forge';
+export default function Index() {
+  const [APIResponse, setAPIResponse] = useState('');
+  const [publicKey, setPublicKey] = useState(null);
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+    // Encrypt string using the fetched public key with RSA-OAEP
+  const encryptString = (plaintext: string): string | null => {
+    if (!publicKey) {
+      console.error('Public key not available');
+      return null;
+    }
 
-export default function HomeScreen() {
+    try {
+      // Convert the public key from PEM format
+      const publicKeyForge = forge.pki.publicKeyFromPem(publicKey);
+    // Encrypt using OAEP padding with SHA-256
+          const encrypted = publicKeyForge.encrypt(plaintext, 'RSA-OAEP', {
+            md: forge.md.sha256.create(),
+      });
+      // Convert encrypted data to a Base64 string
+      return forge.util.encode64(encrypted);
+    } catch (error) {
+      console.error('Encryption error:', error);
+      return null;
+    }
+  };
+  const email = "1998patelumang@gmail.com";
+  const password = "Umang@123";
+  const username = "robonetphy";
+  const user_agent = navigator.userAgent;
+  const testRegister = async () => {
+    try {
+      const encryptedPassword = await encryptString(password);
+      axios.post("http://192.168.29.202:8080/user/register",  {
+        email,
+        password:encryptedPassword,
+        username,
+        user_agent
+      })
+      .then((response) => {
+        setAPIResponse(response.data);
+      })
+      .catch((error) => {
+        console.error('Error during signup:', error);
+        setAPIResponse(error);
+      });
+    } catch (error) {
+      console.error('Encryption error:', error);
+    }
+  }
+  const testLoginWithEmail = async () => {
+    try {
+      const encryptedPassword = await encryptString(password);
+      axios.post("http://192.168.29.202:8080/user/login",  {
+        email,
+        password:encryptedPassword,
+        user_agent
+      })
+      .then((response) => {
+        setAPIResponse(response.data);
+      })
+      .catch((error) => {
+        console.error('Error during signup:', error);
+        setAPIResponse(error);
+      });
+    } catch (error) {
+      console.error('Encryption error:', error);
+    }
+  }
+  const testLoginWithUserName = async () => {
+    try {
+      const encryptedPassword = await encryptString(password);
+      axios.post("http://192.168.29.202:8080/user/login",  {
+        password:encryptedPassword,
+        username,
+        user_agent
+      })
+      .then((response) => {
+        setAPIResponse(response.data);
+      })
+      .catch((error) => {
+        console.error('Error during signup:', error);
+        setAPIResponse(error);
+      });
+    } catch (error) {
+      console.error('Encryption error:', error);
+    }
+  }
+  
+  // Fetch the public key from the API when the component mounts
+  useEffect(() => {
+    axios
+      .get('http://192.168.29.202:8080/key/public')
+      .then((response) => {
+        setPublicKey(response.data.public_key); // Adjust this if the key is nested within the response object
+      })
+      .catch((error) => {
+        console.error('Error fetching public key:', error);
+      });
+  }, []);
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({ ios: 'cmd + d', android: 'cmd + m' })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <View style={styles.container}>
+      <Text style={styles.text}>
+        {APIResponse}
+      </Text>
+      <Pressable onPress={testRegister}>
+        <Text style={styles.text}>Test Register</Text>
+      </Pressable>
+      <Pressable onPress={testLoginWithEmail}>
+        <Text style={styles.text}>Test Login with Email</Text>
+      </Pressable>
+
+      <Pressable onPress={testLoginWithUserName}>
+        <Text style={styles.text}>Test Login with userName</Text>
+      </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
+  container: {
+    flex: 1,
+    backgroundColor: '#25292e',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  text: {
+    color: '#fff',
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  button: {
+    fontSize: 20,
+    textDecorationLine: 'underline',
+    color: '#fff',
   },
 });
